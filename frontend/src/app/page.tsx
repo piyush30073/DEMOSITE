@@ -1,0 +1,11 @@
+"use client";
+import {useState} from "react";
+type Lead={id:string;student_name:string;phone:string;status:string;source:string;created_at:string};
+const API=process.env.NEXT_PUBLIC_API_URL||"http://localhost:8000/api/v1";
+export default function Home(){
+ const [token,setToken]=useState("");const [org,setOrg]=useState("");const [leads,setLeads]=useState<Lead[]>([]);const [error,setError]=useState("");const [busy,setBusy]=useState(false);
+ async function load(){if(!token||!org){setError("Enter a development JWT and organization UUID.");return}setBusy(true);setError("");try{const r=await fetch(`${API}/leads?organization_id=${encodeURIComponent(org)}`,{headers:{Authorization:`Bearer ${token}`},cache:"no-store"});const j=await r.json();if(!r.ok)throw new Error(j.detail||"Unable to load leads");setLeads(j.data||[])}catch(e){setError(e instanceof Error?e.message:"Request failed")}finally{setBusy(false)}}
+ return <main className="shell"><header><div style={{color:"#087f61",fontWeight:800,letterSpacing:2}}>ADMISSIONFLOW</div><h1 style={{fontSize:34,marginBottom:6}}>Admissions workspace</h1><p className="muted">Manage student enquiries and keep every follow-up moving.</p></header>
+ <section className="panel"><h2>Connect workspace</h2><p className="muted">Development integration only. Never paste production secrets into a shared device.</p><div className="grid"><input className="field" placeholder="Development JWT" value={token} onChange={e=>setToken(e.target.value)}/><input className="field" placeholder="Organization UUID" value={org} onChange={e=>setOrg(e.target.value)}/></div><button className="btn" onClick={load} disabled={busy}>{busy?"Loading…":"Load leads"}</button>{error&&<p role="alert" style={{color:"#b42318"}}>{error}</p>}</section>
+ <section className="panel"><h2>Recent leads ({leads.length})</h2>{!leads.length?<p className="muted">Connect a workspace to view its leads.</p>:<div style={{overflowX:"auto"}}><table><thead><tr><th>Student</th><th>Phone</th><th>Status</th><th>Source</th><th>Created</th></tr></thead><tbody>{leads.map(x=><tr key={x.id}><td>{x.student_name}</td><td>{x.phone}</td><td>{x.status}</td><td>{x.source}</td><td>{new Date(x.created_at).toLocaleDateString()}</td></tr>)}</tbody></table></div>}</section><small className="muted">AdmissionFlow · MVP starter</small></main>
+}
