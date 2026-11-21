@@ -1,0 +1,4 @@
+# Python dependencies are split by service:
+# backend/requirements.txt
+# ai-service/requirements.txt
+# Frontend dependencies: frontend/package.json
