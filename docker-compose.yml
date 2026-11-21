@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: admissionflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_only}
+    ports: ["5432:5432"]
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./backend/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d admissionflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-local_dev_only}@db:5432/admissionflow
+      JWT_SECRET: ${JWT_SECRET:-development-only-change-this}
+      CORS_ORIGINS: http://localhost:3000
+    ports: ["8000:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+  ai-service:
+    build: ./ai-service
+    environment:
+      SERVICE_API_KEY: ${AI_SERVICE_KEY:-local-ai-key}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports: ["8001:8001"]
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports: ["3000:3000"]
+    depends_on: [backend]
+volumes:
+  db_data:
